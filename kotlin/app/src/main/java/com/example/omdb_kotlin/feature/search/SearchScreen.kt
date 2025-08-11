@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,17 @@ import com.example.omdb_kotlin.domain.MovieShort
 import com.example.omdb_kotlin.domain.OmdbRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import com.example.omdb_kotlin.data.local.FavoritesStore
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 
 class SearchViewModel(private val repo: OmdbRepository = OmdbRepository()) : ViewModel() {
     var query by mutableStateOf("")
@@ -57,6 +69,12 @@ fun SearchScreen(
     val loading = vm.loading
     val error = vm.error
 
+    // Favorites wiring
+    val context = LocalContext.current
+    val store = remember { FavoritesStore(context) }
+    val favorites by store.favoritesFlow.collectAsState(initial = emptySet())
+    val scope = rememberCoroutineScope()
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
@@ -80,7 +98,13 @@ fun SearchScreen(
 
         LazyColumn(Modifier.fillMaxSize()) {
             items(results) { movie ->
-                MovieRow(movie = movie, onClick = { onMovieClick(movie.id) })
+                val isFav = favorites.contains(movie.id)
+                MovieRow(
+                    movie = movie,
+                    isFavorite = isFav,
+                    onToggleFavorite = { scope.launch { store.toggle(movie.id) } },
+                    onClick = { onMovieClick(movie.id) }
+                )
                 Divider()
             }
         }
@@ -88,7 +112,12 @@ fun SearchScreen(
 }
 
 @Composable
-private fun MovieRow(movie: MovieShort, onClick: () -> Unit) {
+private fun MovieRow(
+    movie: MovieShort,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -105,7 +134,11 @@ private fun MovieRow(movie: MovieShort, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(movie.title, style = MaterialTheme.typography.titleMedium)
             Text(movie.year, style = MaterialTheme.typography.bodyMedium)
+            Text(movie.type, style = MaterialTheme.typography.labelMedium)
         }
-        AssistChip(onClick = onClick, label = { Text(movie.type) })
+        IconButton(onClick = onToggleFavorite) {
+            if (isFavorite) Icon(Icons.Filled.Favorite, contentDescription = "Unfavorite")
+            else Icon(Icons.Outlined.FavoriteBorder, contentDescription = "Favorite")
+        }
     }
 }

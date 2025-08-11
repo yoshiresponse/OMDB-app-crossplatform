@@ -20,6 +20,12 @@ import androidx.navigation.navArgument
 import com.example.omdb_kotlin.ui.theme.Omdb_kotlinTheme
 import com.example.omdb_kotlin.feature.search.SearchScreen
 import com.example.omdb_kotlin.feature.details.DetailsScreen
+import com.example.omdb_kotlin.feature.favorites.FavoritesScreen
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Chat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +46,15 @@ fun App() {
         topBar = {
             TopAppBar(
                 title = { Text("OMDb Lookup") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary, titleContentColor = Color.White),
+                actions = {
+                    IconButton(onClick = { navController.navigate("favorites") }) {
+                        Icon(Icons.Filled.Favorite, contentDescription = "Favorites", tint = Color.White)
+                    }
+                    IconButton(onClick = { navController.navigate("chat") }) {
+                        Icon(Icons.Filled.Chat, contentDescription = "Chat", tint = Color.White)
+                    }
+                }
             )
         }
     ) { padding ->
@@ -51,6 +65,12 @@ fun App() {
         ) {
             composable("search") {
                 SearchScreen(onMovieClick = { id -> navController.navigate("details/$id") })
+            }
+            composable("favorites") {
+                FavoritesScreen(onMovieClick = { id -> navController.navigate("details/$id") })
+            }
+            composable("chat") {
+                com.example.omdb_kotlin.feature.chat.ChatScreen(onMovieClick = { id -> navController.navigate("details/$id") })
             }
             composable(
                 route = "details/{imdbId}",

@@ -31,6 +31,22 @@ android {
                 ?: "OMDB_API_KEY_PLACEHOLDER"
             )
         buildConfigField("String", "OMDB_API_KEY", "\"$omdbKey\"")
+
+        // Expose Gemini API key similarly
+        val geminiKey = (
+            System.getenv("GEMINI_API_KEY")
+                ?: (project.findProperty("GEMINI_API_KEY") as String?)
+                ?: run {
+                    val f = rootProject.file(".env")
+                    if (f.exists()) {
+                        val line = f.readLines()
+                            .firstOrNull { it.trim().startsWith("GEMINI_API_KEY=") }
+                        line?.substringAfter("GEMINI_API_KEY=")?.trim()
+                    } else null
+                }
+                ?: "GEMINI_API_KEY_PLACEHOLDER"
+            )
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
 
     buildTypes {
@@ -79,6 +95,15 @@ dependencies {
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // DataStore for simple persistence
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Material icons (for favorites/chat icons)
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Google Generative AI (Gemini) client
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
