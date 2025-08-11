@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var loading = false
     @State private var error: String?
     @State private var results: [MovieShort] = []
+    @EnvironmentObject private var favorites: FavoritesStore
 
     var body: some View {
         NavigationStack {
@@ -51,6 +52,14 @@ struct ContentView: View {
                                 Text(movie.year).font(.subheadline).foregroundColor(.secondary)
                                 Text(movie.type.capitalized).font(.caption).foregroundColor(.secondary)
                             }
+
+                            Spacer()
+
+                            Button(action: { favorites.toggle(movie.imdbID) }) {
+                                Image(systemName: favorites.isFavorite(movie.imdbID) ? "heart.fill" : "heart")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -86,5 +95,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView().environmentObject(FavoritesStore())
 }

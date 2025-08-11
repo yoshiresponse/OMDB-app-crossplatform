@@ -62,7 +62,7 @@ final class OMDBAPI {
     private let session: URLSession
 
     private init(session: URLSession = .shared) {
-        self.apiKey = APIKeyManager.shared.apiKey
+        self.apiKey = APIKeyManager.shared.omdbApiKey
         self.session = session
     }
 

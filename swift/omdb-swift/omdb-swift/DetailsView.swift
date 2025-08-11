@@ -6,6 +6,7 @@ struct DetailsView: View {
     @State private var detail: MovieDetail?
     @State private var loading = true
     @State private var error: String?
+    @EnvironmentObject private var favorites: FavoritesStore
 
     var body: some View {
         ScrollView {
@@ -52,6 +53,14 @@ struct DetailsView: View {
                             if let rating = d.imdbRating, !rating.isEmpty {
                                 Label("IMDb " + rating, systemImage: "star.fill")
                             }
+
+                            Spacer()
+
+                            Button(action: { favorites.toggle(imdbID) }) {
+                                Image(systemName: favorites.isFavorite(imdbID) ? "heart.fill" : "heart")
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(.plain)
                         }
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -95,6 +104,6 @@ struct DetailsView: View {
 
 #Preview {
     NavigationStack {
-        DetailsView(imdbID: "tt0133093")
+        DetailsView(imdbID: "tt0133093").environmentObject(FavoritesStore())
     }
 }

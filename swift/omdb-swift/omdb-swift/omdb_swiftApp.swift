@@ -9,9 +9,18 @@ import SwiftUI
 
 @main
 struct omdb_swiftApp: App {
+    @StateObject private var favorites = FavoritesStore()
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                ContentView()
+                    .tabItem { Label("Search", systemImage: "magnifyingglass") }
+                FavoritesView()
+                    .tabItem { Label("Favorites", systemImage: "heart") }
+                ChatView()
+                    .tabItem { Label("Chat", systemImage: "text.bubble") }
+            }
+            .environmentObject(favorites)
         }
     }
 }
