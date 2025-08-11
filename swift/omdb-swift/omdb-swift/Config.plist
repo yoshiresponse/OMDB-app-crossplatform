@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>GEMINI_API_KEY</key>
+	<string>AIzaSyCaEBhUa7pi_85a8swv70Z8i9zUqRSgFY4</string>
+	<key>OMDB_API_KEY</key>
+	<string>d2766536</string>
+</dict>
+</plist>
