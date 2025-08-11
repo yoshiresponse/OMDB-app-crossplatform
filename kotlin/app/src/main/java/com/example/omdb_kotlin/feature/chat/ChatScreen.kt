@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,6 +26,10 @@ class ChatViewModel(private val repo: OmdbRepository = OmdbRepository()) : ViewM
         private set
     var error by mutableStateOf<String?>(null)
         private set
+    var llmText by mutableStateOf("")
+        private set
+    var suggestions by mutableStateOf<List<String>>(emptyList())
+        private set
 
     fun onPromptChange(s: String) { prompt = s }
 
@@ -34,8 +40,10 @@ class ChatViewModel(private val repo: OmdbRepository = OmdbRepository()) : ViewM
             loading = true
             error = null
             try {
-                val suggestions = GeminiClient.suggestQueries(q)
-                val queries = if (suggestions.isNotEmpty()) suggestions else listOf(q)
+                val output = GeminiClient.respondAndSuggest(q)
+                llmText = output.text
+                suggestions = output.queries
+                val queries = if (output.queries.isNotEmpty()) output.queries else listOf(q)
                 val aggregated = mutableMapOf<String, MovieShort>()
                 for (query in queries) {
                     val res = repo.search(query)
@@ -43,6 +51,24 @@ class ChatViewModel(private val repo: OmdbRepository = OmdbRepository()) : ViewM
                         .onFailure { e -> error = e.message }
                 }
                 results = aggregated.values.toList()
+            } catch (t: Throwable) {
+                error = t.message
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    fun runQuery(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) return
+        viewModelScope.launch {
+            loading = true
+            error = null
+            try {
+                val res = repo.search(q)
+                res.onSuccess { list -> results = list }
+                    .onFailure { e -> error = e.message }
             } catch (t: Throwable) {
                 error = t.message
             } finally {
@@ -61,32 +87,54 @@ fun ChatScreen(
     val results = vm.results
     val loading = vm.loading
     val error = vm.error
+    val llmText = vm.llmText
+    val suggestions = vm.suggestions
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row {
-            OutlinedTextField(
-                value = prompt,
-                onValueChange = vm::onPromptChange,
-                label = { Text("Ask for movies...") },
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = vm::ask) { Text("Send") }
-        }
-        Spacer(Modifier.height(8.dp))
-        if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Spacer(Modifier.height(8.dp))
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(results) { movie ->
-                ListItem(
-                    headlineContent = { Text(movie.title) },
-                    supportingContent = { Text(movie.year) },
-                    trailingContent = { Text(movie.type) },
-                    modifier = Modifier.fillMaxWidth().clickable { onMovieClick(movie.id) }
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Row {
+                OutlinedTextField(
+                    value = prompt,
+                    onValueChange = vm::onPromptChange,
+                    label = { Text("Ask for movies...") },
+                    modifier = Modifier.weight(1f)
                 )
-                Divider()
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = vm::ask) { Text("Send") }
             }
+        }
+        item { Spacer(Modifier.height(8.dp)) }
+        item { if (loading) LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        item { error?.let { Text(it, color = MaterialTheme.colorScheme.error) } }
+        if (llmText.isNotBlank()) {
+            item {
+                Spacer(Modifier.height(8.dp))
+                ElevatedCard(Modifier.fillMaxWidth()) {
+                    Text(llmText, modifier = Modifier.padding(12.dp))
+                }
+            }
+        }
+        if (suggestions.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.horizontalScroll(rememberScrollState())) {
+                    Spacer(Modifier.width(4.dp))
+                    suggestions.forEach { q ->
+                        AssistChip(onClick = { vm.runQuery(q) }, label = { Text(q) })
+                        Spacer(Modifier.width(8.dp))
+                    }
+                }
+            }
+        }
+        item { Spacer(Modifier.height(8.dp)) }
+        items(results) { movie ->
+            ListItem(
+                headlineContent = { Text(movie.title) },
+                supportingContent = { Text(movie.year) },
+                trailingContent = { Text(movie.type) },
+                modifier = Modifier.fillMaxWidth().clickable { onMovieClick(movie.id) }
+            )
+            Divider()
         }
     }
 }

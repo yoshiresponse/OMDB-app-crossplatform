@@ -28,4 +28,21 @@ object GeminiClient {
             .filter { it.isNotEmpty() }
             .take(3)
     }
+
+    data class GeminiOutput(val text: String, val queries: List<String>)
+
+    suspend fun respondAndSuggest(prompt: String): GeminiOutput {
+        if (apiKey.isBlank() || apiKey == "GEMINI_API_KEY_PLACEHOLDER") {
+            return GeminiOutput(text = "", queries = emptyList())
+        }
+        val model = GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            apiKey = apiKey
+        )
+        // Natural response
+        val natural = model.generateContent(prompt).text ?: ""
+        // Suggestions
+        val suggestions = suggestQueries(prompt)
+        return GeminiOutput(text = natural, queries = suggestions)
+    }
 }
